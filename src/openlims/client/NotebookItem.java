@@ -2,6 +2,7 @@ package openlims.client;
 
 public class NotebookItem {
 	
+	private int ID=0;
 	private String date=null;
 	private String author=null;
 	private String note=null;
@@ -10,7 +11,8 @@ public class NotebookItem {
 		
 	}
 	
-	public NotebookItem(String date, String author, String note) {
+	public NotebookItem(int ID, String date, String author, String note) {
+		this.setID(ID);
 		this.setDate(date);
 		this.setAuthor(author);
 		this.setNote(note);
@@ -18,6 +20,14 @@ public class NotebookItem {
 	
 	//Getters and setters
 
+	public int getID() {
+		return ID;
+	}
+	
+	public void setID(int ID) {
+		this.ID = ID;
+	}
+	
 	public String getDate() {
 		return date;
 	}
