@@ -16,5 +16,6 @@
 	<classpathentry kind="lib" path="E:/Program Files/Java/javafx-sdk-16/lib/javafx.web.jar"/>
 	<classpathentry kind="lib" path="E:/Program Files/Java/javafx-sdk-16/lib/javafx-swt.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/SQLite JDBC"/>
+	<classpathentry kind="lib" path="E:/Program Files/Java/javafx-autocomplete-field-1.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

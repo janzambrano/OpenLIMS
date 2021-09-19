@@ -42,6 +42,9 @@ public class MainWindow extends Application {
 	Separator separatorH=new Separator(Orientation.HORIZONTAL);
 	Separator separatorV=new Separator(Orientation.VERTICAL);
 	
+	static int selectedSubInvID=0;
+	static int selectedNotebookID=0;
+	
     @Override
     public void start(Stage primaryStage) {
     	primaryStage.setTitle("OpenLIMS"); 	
@@ -106,8 +109,13 @@ public class MainWindow extends Application {
     	
     	//Buttons //TODO Make this buttons actually do something
     	Button addToInventoryButton=new Button("Add");
+    	addToInventoryButton.setOnAction(e->{
+    		Stage itemStage = new Stage();
+    		AddItemWindow.launch(itemStage, selectedSubInvID, conn, stat);
+    	});
+    	
     	Button moveToInventoryButton=new Button("Move to inventory");
-    	Button removeFromInventoryButton=new Button("Remove");    	
+    	Button removeFromInventoryButton=new Button("Remove");  	
     	Button searchForItemButton=new Button("Search");
     	
     	//Adding elements to the scene
@@ -221,6 +229,7 @@ public class MainWindow extends Application {
     		inventoryItem.setOnAction(e->{
     			subInventorySelectButton.setText(inventoryItem.getText());
     			updateItemsTable(inventoryTab,id);
+    			selectedSubInvID=id;
     		});
     	}
     	createAddInventoryButt(subInventorySelectButton, inventoryTab);
@@ -312,6 +321,7 @@ public class MainWindow extends Application {
     		notebookItem.setOnAction(e->{
     			notebookSelectButton.setText(notebookItem.getText());
     			updateNotesTable(notebookTab,id);
+    			selectedNotebookID=id;
     		});
     	}
     	createAddNotebookButt(notebookSelectButton, notebookTab);
