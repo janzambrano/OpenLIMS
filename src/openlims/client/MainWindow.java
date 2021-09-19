@@ -96,19 +96,13 @@ public class MainWindow extends Application {
     	 * Create scene elements
     	 */
     	
-    	//Upper Bar
-    	
     	//Select inventory menu
     	SplitMenuButton subInventorySelectButton=new SplitMenuButton();    	
     	subInventorySelectButton.setText("Choose subinventory");
-    	updateInventorySelectButton(subInventorySelectButton,inventoryTab);//Insert notebooks into the splitMenuButton
-    	
-    	//"Add" option
-    	MenuItem addSubInventory=new MenuItem("Add");
-		subInventorySelectButton.getItems().add(addSubInventory);
-		addSubInventory.setOnAction(e->{
-			//TODO Add subinventory -> add item to inventories table and create new table subinventory<id>
-		});
+    	subInventorySelectButton.setOnAction(e->{
+    		updateInventorySelectButton(subInventorySelectButton,inventoryTab);//Insert notebooks into the splitMenuButton
+    	});
+    	subInventorySelectButton.fire();//Invoke action on selectButton so the subInv list can be updated
     	
     	//Buttons //TODO Make this buttons actually do something
     	Button addToInventoryButton=new Button("Add");
@@ -164,21 +158,17 @@ public class MainWindow extends Application {
     	
     	SplitMenuButton notebookSelectButton=new SplitMenuButton();    	
     	notebookSelectButton.setText("Choose notebooks");
-    	updateNotebookSelectButton(notebookSelectButton,notebookTab);//Insert notebooks into the splitMenuButton
+    	notebookSelectButton.setOnAction(e->{
+    		updateNotebookSelectButton(notebookSelectButton,notebookTab);//Insert notebooks into the splitMenuButton
+    	});
+    	notebookSelectButton.fire();//Invoke action on selectButton so the notebook list can be updated
     	
-    	//"Add" option
-    	MenuItem addNotebook=new MenuItem("Add");
-    	notebookSelectButton.getItems().add(addNotebook);
-    	addNotebook.setOnAction(e->{
-			//TODO Add notebook -> add item to notebooks table
-    		//stat.executeQuery("INSERT INTO notebooks (text) VALUES (...)")
-		});
     	
     	/**
     	 * Create scene elements
     	 */
     	
-    	HBox upperBar=new HBox(notebookSelectButton, new Label("\t\t\t\t\t\t\t"));
+    	HBox upperBar=new HBox(notebookSelectButton, new Label("\t\t"), addToNotebookButton, moveToNotebookButton, removeFromNotebookyButton, searchForNoteButton);
     	rightLayout=new VBox(upperBar,separatorH,notebookTab);
     	
     	leftBar.setFillWidth(true);
@@ -211,7 +201,18 @@ public class MainWindow extends Application {
     	return inventoriesList;
     }
     
+    static void createAddInventoryButt(SplitMenuButton subInventorySelectButton, TableView<Item> inventoryTab) {
+    	MenuItem addSubInventory=new MenuItem("Add");
+		subInventorySelectButton.getItems().add(addSubInventory);
+		addSubInventory.setOnAction(e->{
+			//TODO Add subinventory -> add item to inventories table and create new table subinventory<id>
+			Stage addSubInvStage = new Stage();
+			AddSubInventoryWindow.launch(addSubInvStage, conn, stat, subInventorySelectButton);
+		});
+    }
+    
     static void updateInventorySelectButton(SplitMenuButton subInventorySelectButton, TableView<Item> inventoryTab) {
+    	subInventorySelectButton.getItems().clear();
     	List<Inventory> inventoriesList=getInventoryList();
     	for(int i=0; i<inventoriesList.size(); i++) {
     		int id=inventoriesList.get(i).getId();
@@ -222,6 +223,7 @@ public class MainWindow extends Application {
     			updateItemsTable(inventoryTab,id);
     		});
     	}
+    	createAddInventoryButt(subInventorySelectButton, inventoryTab);
     }
     
     static void updateItemsTable(TableView<Item> inventoryTab, int inventoryID) {
@@ -290,7 +292,18 @@ public class MainWindow extends Application {
     	return notebooksList;
     }
     
+    static void createAddNotebookButt(SplitMenuButton notebookSelectButton, TableView<NotebookItem> notebookTab) {
+    	MenuItem addNotebook=new MenuItem("Add");
+    	notebookSelectButton.getItems().add(addNotebook);
+    	addNotebook.setOnAction(e->{
+			//TODO Add subinventory -> add item to inventories table and create new table subinventory<id>
+			Stage addNotebookStage = new Stage();
+			AddNotebookWindow.launch(addNotebookStage, conn, stat, notebookSelectButton);
+		});
+    }
+    
     static void updateNotebookSelectButton(SplitMenuButton notebookSelectButton, TableView<NotebookItem> notebookTab) {
+    	notebookSelectButton.getItems().clear();
     	List<Notebook> notebooksList=getNotebookList();
     	for(int i=0; i<notebooksList.size(); i++) {
     		int id=notebooksList.get(i).getId();
@@ -301,6 +314,7 @@ public class MainWindow extends Application {
     			updateNotesTable(notebookTab,id);
     		});
     	}
+    	createAddNotebookButt(notebookSelectButton, notebookTab);
     }
     
     static void updateNotesTable(TableView<NotebookItem> notebookTab, int notebookID) {
