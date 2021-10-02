@@ -9,15 +9,20 @@
 package openlims.client;
 
 import javafx.application.Application;
+import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SplitMenuButton;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TableView.TableViewSelectionModel;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -115,11 +120,28 @@ public class MainWindow extends Application {
     	});
     	
     	Button moveToInventoryButton=new Button("Move to inventory");
-    	Button removeFromInventoryButton=new Button("Remove");  	
+    	
+    	Button removeFromInventoryButton=new Button("Remove");
+    	removeFromInventoryButton.setOnAction(e->{
+    		Alert alert = new Alert(AlertType.CONFIRMATION, "Do you want to delete this item?", ButtonType.YES, ButtonType.CANCEL);
+    		alert.showAndWait();
+    		if (alert.getResult() == ButtonType.YES)
+    			removeItemFromSubInventory(inventoryTab);    		
+    	});
+    	
+    	Button removeSubinventoryButton=new Button("Remove Subinventory");
+    	removeSubinventoryButton.setOnAction(e->{
+    		Alert alert = new Alert(AlertType.CONFIRMATION, "Do you want to delete this inventory?", ButtonType.YES, ButtonType.CANCEL);
+    		alert.showAndWait();
+    		if (alert.getResult() == ButtonType.YES)
+    			removeSubinventory(subInventorySelectButton, inventoryTab);
+    	});
+    	
     	Button searchForItemButton=new Button("Search");
     	
     	//Adding elements to the scene
-    	HBox upperBar=new HBox(subInventorySelectButton, new Label("\t\t"), addToInventoryButton, moveToInventoryButton, removeFromInventoryButton, searchForItemButton);
+    	HBox upperBar=new HBox(subInventorySelectButton, new Label("\t\t"),
+    			addToInventoryButton, moveToInventoryButton, removeFromInventoryButton, removeSubinventoryButton, searchForItemButton);
     	rightLayout=new VBox(upperBar,separatorH,inventoryTab);
     	
     	HBox mainLayout=new HBox(leftBar,separatorV,rightLayout);
@@ -131,7 +153,7 @@ public class MainWindow extends Application {
     /**
      * TODO Notes should be contained in .md files
      * (imported using this client to the special folder, files should have names like "<notebookID>_<noteID>.md")
-     * At the beginnig, when table item is clicked, the window for saving note should be shown (so we can export .md to our personal folder)
+     * At the beginning, when a table item is clicked, the window for saving note should be shown (so we can export .md to our personal folder)
      * In the next step a simple text editor should be created, so we could actually edit the note using this client
      */
     
@@ -141,14 +163,14 @@ public class MainWindow extends Application {
     	/**
     	 * Create inventory table
     	 */
-    	TableView<NotebookItem> notebookTab=new TableView<NotebookItem>();
-    	TableColumn<NotebookItem, Integer> notebookTabColumnID=new TableColumn<>("ID");
+    	TableView<Note> notebookTab=new TableView<Note>();
+    	TableColumn<Note, Integer> notebookTabColumnID=new TableColumn<>("ID");
     	notebookTabColumnID.setCellValueFactory(new PropertyValueFactory<>("ID"));
-    	TableColumn<NotebookItem, String> notebookTabColumnDate=new TableColumn<>("Date");
+    	TableColumn<Note, String> notebookTabColumnDate=new TableColumn<>("Date");
     	notebookTabColumnDate.setCellValueFactory(new PropertyValueFactory<>("date"));
-    	TableColumn<NotebookItem, String> notebookTabColumnName=new TableColumn<>("Author");
+    	TableColumn<Note, String> notebookTabColumnName=new TableColumn<>("Author");
     	notebookTabColumnName.setCellValueFactory(new PropertyValueFactory<>("author"));
-    	TableColumn<NotebookItem, String> notebookTabColumnCount=new TableColumn<>("Title");
+    	TableColumn<Note, String> notebookTabColumnCount=new TableColumn<>("Title");
     	notebookTabColumnCount.setCellValueFactory(new PropertyValueFactory<>("note"));
     	
     	notebookTab.getColumns().add(notebookTabColumnID);
@@ -161,7 +183,13 @@ public class MainWindow extends Application {
     	//Buttons //TODO Make this buttons actually do something
     	Button addToNotebookButton=new Button("Add");
     	Button moveToNotebookButton=new Button("Move to inventory");
-    	Button removeFromNotebookyButton=new Button("Remove");    	
+    	Button removeFromNotebooksButton=new Button("Remove");
+    	removeFromNotebooksButton.setOnAction(e->{
+    		Alert alert = new Alert(AlertType.CONFIRMATION, "Do you want to delete this note?", ButtonType.YES, ButtonType.CANCEL);
+    		alert.showAndWait();
+    		if (alert.getResult() == ButtonType.YES)
+    			removeNoteFromNotebook(notebookTab);
+    	});
     	Button searchForNoteButton=new Button("Search");
     	
     	SplitMenuButton notebookSelectButton=new SplitMenuButton();    	
@@ -176,7 +204,7 @@ public class MainWindow extends Application {
     	 * Create scene elements
     	 */
     	
-    	HBox upperBar=new HBox(notebookSelectButton, new Label("\t\t"), addToNotebookButton, moveToNotebookButton, removeFromNotebookyButton, searchForNoteButton);
+    	HBox upperBar=new HBox(notebookSelectButton, new Label("\t\t"), addToNotebookButton, moveToNotebookButton, removeFromNotebooksButton, searchForNoteButton);
     	rightLayout=new VBox(upperBar,separatorH,notebookTab);
     	
     	leftBar.setFillWidth(true);
@@ -187,6 +215,27 @@ public class MainWindow extends Application {
     	stage.setScene(scene);//Add scene to the stage
     }
     
+    /**
+     * Operations on items
+     */
+    
+    static void removeItemFromSubInventory(TableView<Item> inventoryTab) {
+    	TableViewSelectionModel<Item> selectionModel = inventoryTab.getSelectionModel();
+    	ObservableList<Item> selectedTableItem = selectionModel.getSelectedItems();
+    	Item selectedItem=null;
+    	try {
+    		selectedItem = selectedTableItem.get(0);
+    	} catch (java.lang.IndexOutOfBoundsException e){
+    		e.printStackTrace();
+    		return;
+    	}
+    	try {
+			stat.execute("DELETE FROM subinventory"+selectedSubInvID+" WHERE id="+selectedItem.getID());
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+    	updateItemsTable(inventoryTab, selectedSubInvID);
+    }
     /**
      * Functions for inventories
      */
@@ -213,7 +262,6 @@ public class MainWindow extends Application {
     	MenuItem addSubInventory=new MenuItem("Add");
 		subInventorySelectButton.getItems().add(addSubInventory);
 		addSubInventory.setOnAction(e->{
-			//TODO Add subinventory -> add item to inventories table and create new table subinventory<id>
 			Stage addSubInvStage = new Stage();
 			AddSubInventoryWindow.launch(addSubInvStage, conn, stat, subInventorySelectButton);
 		});
@@ -233,6 +281,16 @@ public class MainWindow extends Application {
     		});
     	}
     	createAddInventoryButt(subInventorySelectButton, inventoryTab);
+    }
+    
+    static void removeSubinventory(SplitMenuButton subInventorySelectButton, TableView<Item> inventoryTab) {
+    	try {
+			stat.execute("DROP TABLE subinventory"+selectedSubInvID);
+	    	stat.execute("DELETE FROM inventories WHERE id="+selectedSubInvID);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+    	updateInventorySelectButton(subInventorySelectButton, inventoryTab);
     }
     
     static void updateItemsTable(TableView<Item> inventoryTab, int inventoryID) {
@@ -264,7 +322,6 @@ public class MainWindow extends Application {
     	
     	try {
 			ResultSet result=stat.executeQuery("SELECT * FROM subinventory"+Integer.toString(inventoryID));
-			System.out.println("SELECT * FROM subinventory"+Integer.toString(inventoryID));
 			int id, quantity;
 			String name, note;
 			while(result.next()) {
@@ -278,6 +335,30 @@ public class MainWindow extends Application {
 			e1.printStackTrace();
 		}
     }
+       
+    /**
+     * Operations on notes
+     */
+    
+    static void removeNoteFromNotebook(TableView<Note> notebookTab) {
+    	//TODO Add removing physical note from the notes' folder
+    	TableViewSelectionModel<Note> selectionModel = notebookTab.getSelectionModel();
+    	ObservableList<Note> selectedTableItem = selectionModel.getSelectedItems();
+    	Note selectedItem=null;
+    	try {
+    		selectedItem = selectedTableItem.get(0);
+    	} catch (java.lang.IndexOutOfBoundsException e){
+    		e.printStackTrace();
+    		return;
+    	}
+    	try {
+			stat.execute("DELETE FROM notes WHERE id="+selectedItem.getID()+" AND id_notebook="+selectedNotebookID);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+    	updateNotesTable(notebookTab, selectedSubInvID);
+    }
+    
     
     /**
      * Functions for notebooks
@@ -301,7 +382,7 @@ public class MainWindow extends Application {
     	return notebooksList;
     }
     
-    static void createAddNotebookButt(SplitMenuButton notebookSelectButton, TableView<NotebookItem> notebookTab) {
+    static void createAddNotebookButt(SplitMenuButton notebookSelectButton, TableView<Note> notebookTab) {
     	MenuItem addNotebook=new MenuItem("Add");
     	notebookSelectButton.getItems().add(addNotebook);
     	addNotebook.setOnAction(e->{
@@ -311,7 +392,7 @@ public class MainWindow extends Application {
 		});
     }
     
-    static void updateNotebookSelectButton(SplitMenuButton notebookSelectButton, TableView<NotebookItem> notebookTab) {
+    static void updateNotebookSelectButton(SplitMenuButton notebookSelectButton, TableView<Note> notebookTab) {
     	notebookSelectButton.getItems().clear();
     	List<Notebook> notebooksList=getNotebookList();
     	for(int i=0; i<notebooksList.size(); i++) {
@@ -327,7 +408,7 @@ public class MainWindow extends Application {
     	createAddNotebookButt(notebookSelectButton, notebookTab);
     }
     
-    static void updateNotesTable(TableView<NotebookItem> notebookTab, int notebookID) {
+    static void updateNotesTable(TableView<Note> notebookTab, int notebookID) {
     	//Get list of notes from the database
     	notebookTab.getItems().clear();//Clear table
     	try {
@@ -339,7 +420,7 @@ public class MainWindow extends Application {
 				date=result.getString("date");
 				author=result.getString("author");
 				title=result.getString("title");
-				notebookTab.getItems().add(new NotebookItem(id,date,author,title));
+				notebookTab.getItems().add(new Note(id,date,author,title));
 			}
 		} catch (SQLException e1) {
 			e1.printStackTrace();

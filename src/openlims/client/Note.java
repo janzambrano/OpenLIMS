@@ -1,17 +1,17 @@
 package openlims.client;
 
-public class NotebookItem {
+public class Note {
 	
 	private int ID=0;
 	private String date=null;
 	private String author=null;
 	private String note=null;
 	
-	public NotebookItem(){
+	public Note(){
 		
 	}
 	
-	public NotebookItem(int ID, String date, String author, String note) {
+	public Note(int ID, String date, String author, String note) {
 		this.setID(ID);
 		this.setDate(date);
 		this.setAuthor(author);
