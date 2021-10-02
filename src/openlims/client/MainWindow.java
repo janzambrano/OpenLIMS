@@ -24,6 +24,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TableView.TableViewSelectionModel;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -120,6 +121,10 @@ public class MainWindow extends Application {
     	});
     	
     	Button moveToInventoryButton=new Button("Move to inventory");
+    	moveToInventoryButton.setOnAction(e->{
+    		Stage itemStage = new Stage();
+    		moveItem(inventoryTab, itemStage);
+    	});
     	
     	Button removeFromInventoryButton=new Button("Remove");
     	removeFromInventoryButton.setOnAction(e->{
@@ -236,6 +241,21 @@ public class MainWindow extends Application {
 		}
     	updateItemsTable(inventoryTab, selectedSubInvID);
     }
+    
+    static void moveItem(TableView<Item> inventoryTab, Stage itemStage) {
+    	TableViewSelectionModel<Item> selectionModel = inventoryTab.getSelectionModel();
+    	ObservableList<Item> selectedTableItem = selectionModel.getSelectedItems();
+    	Item selectedItem=null;
+    	try {
+    		selectedItem = selectedTableItem.get(0);
+    	} catch (java.lang.IndexOutOfBoundsException e){
+    		e.printStackTrace();
+    		return;
+    	}
+    	MoveItemWindow.launch(itemStage, selectedSubInvID, selectedItem.getID(), stat);
+    	updateItemsTable(inventoryTab, selectedSubInvID);
+    }
+    
     /**
      * Functions for inventories
      */
