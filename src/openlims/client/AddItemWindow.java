@@ -108,7 +108,6 @@ public class AddItemWindow extends Application {
 			ResultSet result = stat.executeQuery("SELECT * FROM invItems WHERE name='"+item.getName()+"'");
 			return result.getInt("id");
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return -999;

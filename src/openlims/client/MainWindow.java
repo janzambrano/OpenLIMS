@@ -189,7 +189,7 @@ public class MainWindow extends Application {
     
     /**
      * TODO Notes should be contained in .md files
-     * (imported using this client to the special folder, files should have names like "<notebookID>_<noteID>.md")
+     * (imported using this client to the special folder, files should have names like "<noteID>.md")
      * At the beginning, when a table item is clicked, the window for saving note should be shown (so we can export .md to our personal folder)
      * In the next step a simple text editor should be created, so we could actually edit the note using this client
      */
@@ -215,12 +215,18 @@ public class MainWindow extends Application {
     	notebookTab.getColumns().add(notebookTabColumnName);
     	notebookTab.getColumns().add(notebookTabColumnCount);
     	
-    	//Upper Bar
+    	//Upper Bar   	
+    	SplitMenuButton notebookSelectButton=new SplitMenuButton();    	
+    	notebookSelectButton.setText("Choose notebooks");
+    	notebookSelectButton.setOnAction(e->{
+    		updateNotebookSelectButton(notebookSelectButton,notebookTab);//Insert notebooks into the splitMenuButton
+    	});
+    	notebookSelectButton.fire();//Invoke action on selectButton so the notebook list can be updated
     	
     	Button addToNotebookButton=new Button("Add");
     	addToNotebookButton.setOnAction(e->{
     		Stage noteStage = new Stage();
-    		addNote(noteStage);
+    		AddNoteWindow.launch(noteStage, selectedNotebookID, stat);
     	});
     	
     	Button moveToNotebookButton=new Button("Move to notebook");
@@ -233,19 +239,21 @@ public class MainWindow extends Application {
     			removeNoteFromNotebook(notebookTab);
     	});
     	
-    	SplitMenuButton notebookSelectButton=new SplitMenuButton();    	
-    	notebookSelectButton.setText("Choose notebooks");
-    	notebookSelectButton.setOnAction(e->{
-    		updateNotebookSelectButton(notebookSelectButton,notebookTab);//Insert notebooks into the splitMenuButton
+    	Button removeNotebookButton=new Button("Remove Notebook");
+    	removeNotebookButton.setOnAction(e->{
+    		Alert alert = new Alert(AlertType.CONFIRMATION, "Do you want to delete this notebook?", ButtonType.YES, ButtonType.CANCEL);
+    		alert.showAndWait();
+    		if (alert.getResult() == ButtonType.YES)
+    			removeNotebook(notebookSelectButton, notebookTab);
     	});
-    	notebookSelectButton.fire();//Invoke action on selectButton so the notebook list can be updated
     	
     	
     	/**
     	 * Create scene elements
     	 */
     	
-    	HBox upperBar=new HBox(notebookSelectButton, new Label("\t\t"), addToNotebookButton, moveToNotebookButton, removeFromNotebooksButton);
+    	HBox upperBar=new HBox(notebookSelectButton, new Label("\t\t"), addToNotebookButton,
+    			moveToNotebookButton, removeFromNotebooksButton, removeNotebookButton);
     	rightLayout=new VBox(upperBar,separatorH,notebookTab);
     	
     	leftBar.setFillWidth(true);
@@ -432,20 +440,7 @@ public class MainWindow extends Application {
      * Operations on notes
      */
     
-    static void addNote(Stage noteStage) {//TODO Move this method to a new window where you can set title
-    	//Get original note file
-    	FileChooser fileChooser = new FileChooser();
-    	fileChooser.setTitle("Add note");
-    	fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Markdown", "*.md"));
-    	File noteFileOriginal = fileChooser.showOpenDialog(noteStage);
-    	
-    	//Get id for new note
-    	
-    	//Copy original note file to note folder and rename it note_<noteID>
-    }
-    
     static void removeNoteFromNotebook(TableView<Note> notebookTab) {
-    	//TODO Add removing physical note from the notes' folder
     	TableViewSelectionModel<Note> selectionModel = notebookTab.getSelectionModel();
     	ObservableList<Note> selectedTableItem = selectionModel.getSelectedItems();
     	Note selectedItem=null;
@@ -460,6 +455,8 @@ public class MainWindow extends Application {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+    	File rmNote = new File("./notes/note"+selectedItem.getID()+".md");
+    	rmNote.delete();
     	updateNotesTable(notebookTab, selectedSubInvID);
     }
     
@@ -509,6 +506,31 @@ public class MainWindow extends Application {
     		});
     	}
     	createAddNotebookButt(notebookSelectButton, notebookTab);
+    }
+    
+    static void removeNotebook(SplitMenuButton notebookSelectButton, TableView<Note> notebookTab) {    	
+		ArrayList<Integer> idList = new ArrayList<>();
+    	try {//Get every note id connected with this notebook
+			ResultSet result = stat.executeQuery("SELECT id FROM notes WHERE id_notebook="+selectedNotebookID);
+			while(result.next()) {
+				idList.add(result.getInt("id"));
+			}
+		} catch (SQLException e1) {
+			e1.printStackTrace();
+		}
+			
+    	try {
+    		stat.execute("DELETE FROM notebooks WHERE id="+selectedNotebookID);
+	    	stat.execute("DELETE FROM notes WHERE id_notebook="+selectedNotebookID);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+    	
+    	for (int i=0; i<idList.size(); i++) {//Iterate through each note file and remove it
+    		File rmNote = new File("./notes/note"+idList.get(i)+".md");
+        	rmNote.delete();
+    	}
+    	updateNotebookSelectButton(notebookSelectButton, notebookTab);
     }
     
     static void updateNotesTable(TableView<Note> notebookTab, int notebookID) {

@@ -34,7 +34,6 @@ public class AddSubInventoryWindow extends Application {
 				stat.execute("CREATE TABLE subinventory"+Integer.toString(id)+"(id INTEGER, quantity INTEGER, note TEXT)");
 				
 			} catch (SQLException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 			subInventorySelectButton.fire();//Invoke action on selectButton so the subInv list can be updated
