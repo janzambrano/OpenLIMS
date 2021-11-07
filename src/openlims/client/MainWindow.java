@@ -23,6 +23,7 @@ import javafx.scene.control.Separator;
 import javafx.scene.control.SplitMenuButton;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellEditEvent;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TableView.TableViewSelectionModel;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -33,6 +34,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -111,25 +113,21 @@ public class MainWindow extends Application {
 		    new EventHandler<CellEditEvent<Item, Integer>>() {
 		        @Override
 		        public void handle(CellEditEvent<Item, Integer> t) {
-		            ((Item) t.getTableView().getItems().get(
-		                t.getTablePosition().getRow())
-		                ).setCount(t.getNewValue());
+		            ((Item) t.getTableView().getItems().get(t.getTablePosition().getRow())).setCount(t.getNewValue());
 		            updateItemQuant(inventoryTab,t.getNewValue());
 		        }
 		    }
 		);
     	
     	inventoryTabColumnNote.setOnEditCommit(//When note updated, update database
-    		    new EventHandler<CellEditEvent<Item, String>>() {
-    		        @Override
-    		        public void handle(CellEditEvent<Item, String> t) {
-    		            ((Item) t.getTableView().getItems().get(
-    		                t.getTablePosition().getRow())
-    		                ).setNote(t.getNewValue());
-    		            updateItemNote(inventoryTab,t.getNewValue());
-    		        }
+    		new EventHandler<CellEditEvent<Item, String>>() {
+    	        @Override
+    	        public void handle(CellEditEvent<Item, String> t) {
+    	            ((Item) t.getTableView().getItems().get(t.getTablePosition().getRow())).setNote(t.getNewValue());
+    	            updateItemNote(inventoryTab,t.getNewValue());
     		    }
-    		);
+    		}
+    	);
     	
     	inventoryTab.getColumns().add(inventoryTabColumnID);
     	inventoryTab.getColumns().add(inventoryTabColumnName);
@@ -201,19 +199,53 @@ public class MainWindow extends Application {
     	 * Create inventory table
     	 */
     	TableView<Note> notebookTab=new TableView<Note>();
+    	notebookTab.setEditable(true);
     	TableColumn<Note, Integer> notebookTabColumnID=new TableColumn<>("ID");
     	notebookTabColumnID.setCellValueFactory(new PropertyValueFactory<>("ID"));
     	TableColumn<Note, String> notebookTabColumnDate=new TableColumn<>("Date");
     	notebookTabColumnDate.setCellValueFactory(new PropertyValueFactory<>("date"));
-    	TableColumn<Note, String> notebookTabColumnName=new TableColumn<>("Author");
-    	notebookTabColumnName.setCellValueFactory(new PropertyValueFactory<>("author"));
-    	TableColumn<Note, String> notebookTabColumnCount=new TableColumn<>("Title");
-    	notebookTabColumnCount.setCellValueFactory(new PropertyValueFactory<>("note"));
+    	notebookTabColumnDate.setCellFactory(TextFieldTableCell.forTableColumn());
+    	TableColumn<Note, String> notebookTabColumnAuthor=new TableColumn<>("Author");
+    	notebookTabColumnAuthor.setCellValueFactory(new PropertyValueFactory<>("author"));
+    	notebookTabColumnAuthor.setCellFactory(TextFieldTableCell.forTableColumn());
+    	TableColumn<Note, String> notebookTabColumnTitle=new TableColumn<>("Title");
+    	notebookTabColumnTitle.setCellValueFactory(new PropertyValueFactory<>("note"));
+    	notebookTabColumnTitle.setCellFactory(TextFieldTableCell.forTableColumn());
     	
     	notebookTab.getColumns().add(notebookTabColumnID);
     	notebookTab.getColumns().add(notebookTabColumnDate);
-    	notebookTab.getColumns().add(notebookTabColumnName);
-    	notebookTab.getColumns().add(notebookTabColumnCount);
+    	notebookTab.getColumns().add(notebookTabColumnAuthor);
+    	notebookTab.getColumns().add(notebookTabColumnTitle);
+    	
+    	notebookTabColumnDate.setOnEditCommit(//When value updated, update database
+        	new EventHandler<CellEditEvent<Note, String>>() {
+        		@Override
+        	    public void handle(CellEditEvent<Note, String> t) {
+        			((Note) t.getTableView().getItems().get(t.getTablePosition().getRow())).setDate(t.getNewValue());
+        	        updateNoteDate(notebookTab,t.getNewValue());
+        		}
+        	}
+        );
+    	
+    	notebookTabColumnAuthor.setOnEditCommit(//When value updated, update database
+    		new EventHandler<CellEditEvent<Note, String>>() {
+    			@Override
+    		    public void handle(CellEditEvent<Note, String> t) {
+    				((Note) t.getTableView().getItems().get(t.getTablePosition().getRow())).setAuthor(t.getNewValue());
+    		        updateNoteAuthor(notebookTab,t.getNewValue());
+    		    }
+    		}
+    	);
+    	
+    	notebookTabColumnTitle.setOnEditCommit(//When value updated, update database
+       		new EventHandler<CellEditEvent<Note, String>>() {
+       			@Override
+       		    public void handle(CellEditEvent<Note, String> t) {
+       				((Note) t.getTableView().getItems().get(t.getTablePosition().getRow())).setAuthor(t.getNewValue());
+       		        updateNoteTitle(notebookTab,t.getNewValue());
+       		    }
+       		}
+       	);
     	
     	//Upper Bar   	
     	SplitMenuButton notebookSelectButton=new SplitMenuButton();    	
@@ -230,6 +262,10 @@ public class MainWindow extends Application {
     	});
     	
     	Button moveToNotebookButton=new Button("Move to notebook");
+    	moveToNotebookButton.setOnAction(e->{
+    		Stage noteStage = new Stage();
+    		moveNote(notebookTab, noteStage);
+    	});
     	
     	Button removeFromNotebooksButton=new Button("Remove");
     	removeFromNotebooksButton.setOnAction(e->{
@@ -245,6 +281,21 @@ public class MainWindow extends Application {
     		alert.showAndWait();
     		if (alert.getResult() == ButtonType.YES)
     			removeNotebook(notebookSelectButton, notebookTab);
+    	});
+    	
+    	//If double click on table element -> open the note
+    	notebookTab.setRowFactory(tv->{
+    		TableRow<Note> row = new TableRow<>();
+    		row.setOnMouseClicked(e->{
+    			if(e.getClickCount() == 2 && (!row.isEmpty())) {
+    				try {
+						Desktop.getDesktop().open(new File("notes/note"+Integer.toString(row.getItem().getID())+".md"));
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+    			}
+    		});
+    		return row;
     	});
     	
     	
@@ -440,6 +491,20 @@ public class MainWindow extends Application {
      * Operations on notes
      */
     
+    static void moveNote(TableView<Note> notebookTab, Stage itemStage) {
+    	TableViewSelectionModel<Note> selectionModel = notebookTab.getSelectionModel();
+    	ObservableList<Note> selectedTableItem = selectionModel.getSelectedItems();
+    	Note selectedItem=null;
+    	try {
+    		selectedItem = selectedTableItem.get(0);
+    	} catch (java.lang.IndexOutOfBoundsException e){
+    		e.printStackTrace();
+    		return;
+    	}
+    	MoveNoteWindow.launch(itemStage, selectedItem.getID(), stat);
+    	updateNotesTable(notebookTab, selectedNotebookID);
+    }
+    
     static void removeNoteFromNotebook(TableView<Note> notebookTab) {
     	TableViewSelectionModel<Note> selectionModel = notebookTab.getSelectionModel();
     	ObservableList<Note> selectedTableItem = selectionModel.getSelectedItems();
@@ -458,6 +523,60 @@ public class MainWindow extends Application {
     	File rmNote = new File("./notes/note"+selectedItem.getID()+".md");
     	rmNote.delete();
     	updateNotesTable(notebookTab, selectedSubInvID);
+    }
+    
+    static void updateNoteDate(TableView<Note> notebookTab, String date) {
+    	TableViewSelectionModel<Note> selectionModel = notebookTab.getSelectionModel();
+    	ObservableList<Note> selectedTableItem = selectionModel.getSelectedItems();
+    	Note selectedNote=null;
+    	try {
+    		selectedNote = selectedTableItem.get(0);
+    	} catch (java.lang.IndexOutOfBoundsException e){
+    		e.printStackTrace();
+    		return;
+    	}
+    	try {
+			stat.execute("UPDATE notes SET date='"+date+"' WHERE id="+selectedNote.getID());
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+    	updateNotesTable(notebookTab, selectedNotebookID);
+    }
+    
+    static void updateNoteAuthor(TableView<Note> notebookTab, String author) {
+    	TableViewSelectionModel<Note> selectionModel = notebookTab.getSelectionModel();
+    	ObservableList<Note> selectedTableItem = selectionModel.getSelectedItems();
+    	Note selectedNote=null;
+    	try {
+    		selectedNote = selectedTableItem.get(0);
+    	} catch (java.lang.IndexOutOfBoundsException e){
+    		e.printStackTrace();
+    		return;
+    	}
+    	try {
+			stat.execute("UPDATE notes SET author='"+author+"' WHERE id="+selectedNote.getID());
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+    	updateNotesTable(notebookTab, selectedNotebookID);
+    }
+    
+    static void updateNoteTitle(TableView<Note> notebookTab, String title) {
+    	TableViewSelectionModel<Note> selectionModel = notebookTab.getSelectionModel();
+    	ObservableList<Note> selectedTableItem = selectionModel.getSelectedItems();
+    	Note selectedItem=null;
+    	try {
+    		selectedItem = selectedTableItem.get(0);
+    	} catch (java.lang.IndexOutOfBoundsException e){
+    		e.printStackTrace();
+    		return;
+    	}
+    	try {
+			stat.execute("UPDATE notes SET title='"+title+"' WHERE id="+selectedItem.getID());
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+    	updateNotesTable(notebookTab, selectedNotebookID);
     }
     
     
