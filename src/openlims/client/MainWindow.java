@@ -48,6 +48,12 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+
 public class MainWindow extends Application {
 	
 	//SQLite connection
@@ -174,9 +180,14 @@ public class MainWindow extends Application {
     			removeSubinventory(subInventorySelectButton, inventoryTab);
     	});
     	
+    	Button generateQRcodeButton=new Button("QR Code");
+    	generateQRcodeButton.setOnAction(e->{
+    		generateQRCode(inventoryTab);
+    	});
+    	
     	//Adding elements to the scene
     	HBox upperBar=new HBox(subInventorySelectButton, new Label("\t\t"),
-    			addToInventoryButton, moveToInventoryButton, removeFromInventoryButton, removeSubinventoryButton);
+    			addToInventoryButton, moveToInventoryButton, removeFromInventoryButton, generateQRcodeButton, removeSubinventoryButton);
     	rightLayout=new VBox(upperBar,separatorH,inventoryTab);
     	
     	HBox mainLayout=new HBox(leftBar,separatorV,rightLayout);
@@ -349,6 +360,27 @@ public class MainWindow extends Application {
     	}
     	MoveItemWindow.launch(itemStage, selectedSubInvID, selectedItem.getID(), stat);
     	updateItemsTable(inventoryTab, selectedSubInvID);
+    }
+    
+    @SuppressWarnings("deprecation")
+	static void generateQRCode(TableView<Item> inventoryTab) {
+    	TableViewSelectionModel<Item> selectionModel = inventoryTab.getSelectionModel();
+    	ObservableList<Item> selectedTableItem = selectionModel.getSelectedItems();
+    	Item selectedItem=null;
+    	try {
+    		selectedItem = selectedTableItem.get(0);
+    	} catch (java.lang.IndexOutOfBoundsException e){
+    		e.printStackTrace();
+    		return;
+    	}    	
+    	QRCodeWriter barcodeWriter = new QRCodeWriter();
+    	try {
+			BitMatrix bitMatrix = barcodeWriter.encode(selectedItem.getName(), BarcodeFormat.QR_CODE, 200, 200);//EAN_<checksum digit, f.e 13> for 1D barcode
+			String path="./qrcodes/"+Integer.toString(selectedItem.getID())+".png";
+			MatrixToImageWriter.writeToFile(bitMatrix,path.substring(path.lastIndexOf('.') + 1),new File(path));
+		} catch (WriterException | IOException e) {
+			e.printStackTrace();
+		}
     }
     
     static void updateItemQuant(TableView<Item> inventoryTab, int newQuant) {
@@ -727,12 +759,27 @@ public class MainWindow extends Application {
 		}   	
     }
     
+    public static void checkQRDirecory() {//Create folder for qrcodes
+    	Path path = Paths.get("./qrcodes/");
+    	File directory = new File(String.valueOf(path));
+    	if (directory.exists())
+    		return;
+    	try {
+			Files.createDirectories(path);
+			System.out.println("QRcodes directory created");
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.out.println("Failed to create QRcodes directory!");
+		}   	
+    }
+    
     /**
      * Main
      */
     
     public static void main(String[] args) {
     	checkNoteDirecory();
+    	checkQRDirecory();
     	SQLconnect();
     	Application.launch(args);
     	closeConnection();
