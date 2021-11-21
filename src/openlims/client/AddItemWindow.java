@@ -1,11 +1,20 @@
 package openlims.client;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.oned.EAN13Writer;
+import com.google.zxing.qrcode.QRCodeWriter;
 
 import javafx.application.Application;
 import javafx.collections.FXCollections;
@@ -65,7 +74,7 @@ public class AddItemWindow extends Application {
 				new HBox(new Label("Note: "), noteField),
 				addItem);
 		
-		Scene scene = new Scene(vbox, 300,300);
+		Scene scene = new Scene(vbox, 300,150);
 		scene.getStylesheets().add("control.css");
 		primaryStage.setScene(scene);
 		primaryStage.show();
@@ -106,11 +115,24 @@ public class AddItemWindow extends Application {
 			stat.execute("INSERT INTO invItems(name, quantity, weblink, note) VALUES ('"
 					+item.getName()+"', "+item.getCount()+", '"+webpage+"', '"+item.getNote()+"')");
 			ResultSet result = stat.executeQuery("SELECT * FROM invItems WHERE name='"+item.getName()+"'");
+			item.setID(result.getInt("id"));
+			generateQRCode(item); //Generate QR code for it
 			return result.getInt("id");
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 		return -999;
 	}
+	
+	@SuppressWarnings("deprecation")
+	static void generateQRCode(Item selectedItem) {	
+    	try {
+			BitMatrix bitMatrix = new QRCodeWriter().encode(selectedItem.getName(), BarcodeFormat.QR_CODE, 200, 200);//2D Barcode
+			String path="./qrcodes/QR_"+Integer.toString(selectedItem.getID())+".png";
+			MatrixToImageWriter.writeToFile(bitMatrix,path.substring(path.lastIndexOf('.') + 1),new File(path));
+		} catch (WriterException | IOException e) {
+			e.printStackTrace();
+		}
+    }
 
 }
